@@ -19,7 +19,7 @@ if should_delete:
     bpy.ops.object.delete()
 
 name_counter_deal = 0
-spawned_roads = []
+HEATMAP_SIZE = 1000
 
 
 def draw_line(objname, curvename, cList):
@@ -111,7 +111,7 @@ class Grid():
 
 
 def spawn_roads_within_grid(grid, road_size):
-    global spawned_roads
+    spawned_roads = []
     side_data = [
         mathutils.Vector((1, 0, 0)),
         mathutils.Vector((-1, 0, 0)),
@@ -166,25 +166,27 @@ def spawn_roads_within_grid(grid, road_size):
                     if len(generated_points) >= 100:
                         roads_spawned += 1
                         newly_created_road = Road(road_size, generated_points)
-                        spawned_roads += [newly_created_road]
+                        spawned_roads.append(newly_created_road)
                         newly_created_road.draw()
 
                         num_mediums = random.randint(1, 8)
                         while num_mediums > 0:
                             num_mediums -= 1
                             start_point, start_dir = randomly_select_road_start(generated_points)
-                            spawn_road(start_point, start_dir, road_size-1, grid)
+                            spawned_roads.extend(spawn_roads(start_point, start_dir, road_size-1, grid))
                         num_smalls = random.randint(10, 20)
                         while num_smalls > 0:
                             num_smalls -= 1
                             start_point, start_dir = randomly_select_road_start(generated_points)
-                            spawn_road(start_point, start_dir, 1, grid)
+                            spawned_roads.extend(spawn_roads(start_point, start_dir, 1, grid))
                     # choose 10 random children
                     break
 
+    return spawned_roads
 
-def spawn_road(position, direction, road_size, grid):
-    global spawned_roads
+
+def spawn_roads(position, direction, road_size, grid):
+    new_roads = []
 
     road_wanderer = Wanderer()
     road_wanderer.position = position
@@ -210,22 +212,23 @@ def spawn_road(position, direction, road_size, grid):
         points_created += [road_wanderer.position.copy()]
 
     if len(points_created) <= 0:
-        return
+        return []
 
-    newly_created_road = Road(road_size, points_created)
-    spawned_roads += [newly_created_road]
+    new_roads.append(Road(road_size, points_created))
 
     if road_size < 1:
-        return
+        return []
     if len(points_created) < 3:
-        return
+        return []
 
     num_children = random.randint(*child_range[road_size])
     i = 0
     while i < num_children:
         i += 1
         chosen_point, chosen_dir = randomly_select_road_start(points_created)
-        spawn_road(chosen_point, chosen_dir, road_size-1, grid)
+        new_roads.extend(spawn_roads(chosen_point, chosen_dir, road_size-1, grid))
+
+    return new_roads
 
 
 def randomly_select_road_start(points_created):
@@ -253,8 +256,6 @@ class HeatmapSquare():
 
 
 def generate_heatmap(grid, roads):
-    global HEATMAP_SIZE
-
     # create base, and initialize centers
     x_move = mathutils.Vector((1, 0, 0)) * (grid.width * 2 / HEATMAP_SIZE)
     y_move = mathutils.Vector((0, 1, 0)) * (grid.height * 2 / HEATMAP_SIZE)
@@ -288,11 +289,9 @@ def generate_heatmap(grid, roads):
     return heatmap
 
 
-HEATMAP_SIZE = 1000
-
 timer_start = time.time()
 grid = Grid(mathutils.Vector((0, 0, 0)), 5, 5)
-spawn_roads_within_grid(grid, 3)
+spawned_roads = spawn_roads_within_grid(grid, 3)
 
 heatmap = generate_heatmap(grid, spawned_roads)
 
@@ -302,4 +301,4 @@ for road in spawned_roads:
 print("timed the whole thing {0}".format(time.time() - timer_start))
 
 
-print ("done")
+print("done")
