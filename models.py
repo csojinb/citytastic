@@ -123,3 +123,21 @@ class Building():
 
         mesh.from_pydata(vertices, [], indices)
         mesh.update(calc_edges=True)
+
+
+class BuildingLot():
+    __incrementing_lot_id = 0
+
+    def __init__(self, center, base_size, to_road):
+        self.center = center
+        self.base_size = base_size
+        self.to_road = to_road
+        self.id = self.__incrementing_lot_id
+        self.__class__.__incrementing_lot_id += 1
+
+    def draw(self):
+        draw_line("lot" + str(self.id), "curve" + str(self.id), self._points)
+
+    @property
+    def _points(self):
+        return [self.center, self.center + self.to_road * self.base_size / 2]

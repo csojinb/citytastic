@@ -7,6 +7,8 @@ import bpy
 import mathutils
 import time
 
+from lots import select_lots
+
 HEATMAP_SIZE = 20
 
 
@@ -31,13 +33,19 @@ spawned_roads = spawn_roads_within_grid(grid, 3)
 heatmap = generate_heatmap(grid, spawned_roads, HEATMAP_SIZE)
 
 
-buildings = get_buildings(heatmap)
-
 for road in spawned_roads:
     road.draw()
 
+buildings = get_buildings(heatmap)
+
 for b in buildings:
     b.draw()
+
+lots = select_lots(spawned_roads)
+
+for lot in lots:
+    lot.draw()
+
 
 print("timed the whole thing {0}".format(time.time() - timer_start))
 
