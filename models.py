@@ -1,6 +1,7 @@
 from rendering import draw_line
 import mathutils
 import math
+import bpy
 
 
 class Road():
@@ -10,7 +11,7 @@ class Road():
         self.road_size = road_size
         self.points = points
         self.id = self.__incrementing_road_id
-        self.__incrementing_road_id += 1
+        self.__class__.__incrementing_road_id += 1
 
     def draw(self):
         draw_line("road" + str(self.id), "curve" + str(self.id), self.points)
@@ -79,22 +80,46 @@ class HeatmapSquare():
         self.value = value
 
 
-# has a set of points at the bottom and some at the top
-# the plan is that they will have the same X/Y positions, as the bottom set
-# however, the Z values for the tops of the buildings can be different heights to give more interesting shapes
 class Building():
-    def __init__(self):
-        self.base_center
-        self.width = 1
-        self.height = 1     # NOT the height of the building, just trying to be consistent with the (width x height) used throughout the rest of the file
-        self.self.depth = 10    # AKA building_height
+    __incrementing_building_id = 0
+
+    def __init__(self, position=mathutils.Vector((0, 0, 0)), width=1, height=1, depth=1):
+        self.center = position
+        self.width = width
+        self.height = height
+        self.depth = depth
         self.top_points = []
         self.bottom_points = []
+        self.id = self.__incrementing_building_id
+        self.__class__.__incrementing_building_id += 1
 
     def generate_points(self):
         x_vec = mathutils.Vector((self.width, 0, 0))
         y_vec = mathutils.Vector((0, self.height, 0))
-        self.top_points = [
-            self.base_center + x_vec + y_vec,
-            self.base_center + x_vec
+        self.bottom_points = [
+            x_vec + y_vec,
+            x_vec - y_vec,
+            -x_vec - y_vec,
+            -x_vec + y_vec
         ]
+        self.top_points = [bot + mathutils.Vector((0, 0, self.depth)) for bot in self.bottom_points]
+
+    def draw(self):
+        vertices = self.bottom_points + self.top_points
+
+        indices = [
+            (0, 1, 2, 3),   # bottom
+            (4, 5, 6, 7),   # top (maybe wound wrong way)
+            (0, 1, 5, 4),
+            (1, 2, 6, 5),
+            (2, 3, 7, 6),
+            (3, 0, 4, 7)
+        ]
+
+        mesh = bpy.data.meshes.new('Building Mesh ' + str(self.id))
+        obj = bpy.data.objects.new("Building Object " + str(self.id), mesh)
+        obj.location = self.center
+        bpy.context.scene.objects.link(obj)
+
+        mesh.from_pydata(vertices, [], indices)
+        mesh.update(calc_edges=True)

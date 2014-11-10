@@ -1,3 +1,3 @@
 import sys
 
-sys.path.append(r'C:/projects/citytastic')
+sys.path.append(r'C:\projects\citytastic')
